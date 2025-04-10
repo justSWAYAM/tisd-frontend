@@ -92,7 +92,7 @@ const LandingPage = () => {
               Features
             </div>
             <p className="text-gray-300 max-w-3xl">
-              Discover what makes SkillShare the perfect platform for your learning journey
+              Discover what makes SkillStream the perfect platform for your learning journey
             </p>
           </div>
           
@@ -186,7 +186,7 @@ const LandingPage = () => {
                   ))}
                 </div>
                 <p className="text-lg text-white mb-6">
-                  "SkillShare has transformed my learning experience. The courses are well-structured, and the instructors are incredibly knowledgeable. I've gained practical skills that I use in my daily work."
+                  "SkillStream has transformed my learning experience. The courses are well-structured, and the instructors are incredibly knowledgeable. I've gained practical skills that I use in my daily work."
                 </p>
                 <div>
                   <p className="text-white font-bold">Sarah Johnson</p>
@@ -207,7 +207,7 @@ const LandingPage = () => {
                 <div className="absolute inset-0 bg-[#D4FF56] rounded-sm rotate-45"></div>
                 <div className="absolute inset-0 flex items-center justify-center font-bold text-black">S</div>
               </div>
-              <span className="text-2xl font-bold text-white">SkillShare</span>
+              <span className="text-2xl font-bold text-white">SkillStream</span>
             </div>
             
             <div className="flex gap-6">
@@ -280,7 +280,7 @@ const LandingPage = () => {
           
           <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm mb-4 md:mb-0">
-              © {new Date().getFullYear()} SkillShare. All rights reserved.
+              © {new Date().getFullYear()} SkillStream. All rights reserved.
             </p>
             <div className="flex gap-6">
               <a href="#" className="text-gray-400 hover:text-white text-sm transition">Privacy Policy</a>
