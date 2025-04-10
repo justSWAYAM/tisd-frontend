@@ -14,7 +14,7 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-[#D4FF56] rounded-sm rotate-45"></div>
               <div className="absolute inset-0 flex items-center justify-center font-bold text-black">S</div>
             </div>
-            <span className="text-2xl font-bold text-white">SkillShare</span>
+            <span className="text-2xl font-bold text-white">SkillStream</span>
           </div>
           
           <div className="hidden md:flex space-x-8">
