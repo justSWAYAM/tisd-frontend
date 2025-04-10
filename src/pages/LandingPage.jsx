@@ -1,78 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-// Register GSAP plugins
-gsap.registerPlugin(ScrollTrigger);
+import React, { useState } from 'react';
+import AuthModal from '../components/AuthModal';
 
 const LandingPage = () => {
-  const heroRef = useRef(null);
-  const servicesRef = useRef(null);
-  const casesRef = useRef(null);
-  const teamRef = useRef(null);
-  const testimonialsRef = useRef(null);
-
-  useEffect(() => {
-    // Animations for hero section
-    gsap.from(heroRef.current.querySelectorAll('.animate-item'), {
-      y: 30,
-      opacity: 0,
-      duration: 0.8,
-      stagger: 0.2,
-      ease: "power2.out"
-    });
-
-    // Animations for services cards
-    gsap.from(servicesRef.current.querySelectorAll('.service-card'), {
-      scrollTrigger: {
-        trigger: servicesRef.current,
-        start: "top 80%",
-      },
-      y: 20,
-      opacity: 0,
-      duration: 0.5,
-      stagger: 0.1,
-      ease: "power1.out"
-    });
-
-    // Animations for case studies
-    gsap.from(casesRef.current.querySelectorAll('.case-card'), {
-      scrollTrigger: {
-        trigger: casesRef.current,
-        start: "top 75%",
-      },
-      opacity: 0,
-      duration: 0.7,
-      stagger: 0.2,
-      ease: "power2.out"
-    });
-
-    // Animations for team members
-    gsap.from(teamRef.current?.querySelectorAll('.team-card'), {
-      scrollTrigger: {
-        trigger: teamRef.current,
-        start: "top 80%",
-      },
-      scale: 0.95,
-      opacity: 0,
-      duration: 0.5,
-      stagger: 0.1,
-      ease: "back.out(1.5)"
-    });
-
-    // Animations for testimonials
-    gsap.from(testimonialsRef.current?.querySelectorAll('.testimonial-card'), {
-      scrollTrigger: {
-        trigger: testimonialsRef.current,
-        start: "top 80%",
-      },
-      x: 30,
-      opacity: 0,
-      duration: 0.8,
-      ease: "power2.out"
-    });
-
-  }, []);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   return (
     <div className="bg-black text-white min-h-screen overflow-x-hidden">
@@ -95,7 +25,10 @@ const LandingPage = () => {
           </div>
           
           <div>
-            <button className="px-5 py-2 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition">
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-5 py-2 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition"
+            >
               Start Learning
             </button>
           </div>
@@ -103,23 +36,23 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="py-12 md:py-16 px-4 md:px-8 lg:px-12 relative">
+      <section className="py-12 md:py-16 px-4 md:px-8 lg:px-12 relative">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="animate-item text-4xl md:text-5xl font-bold mb-6 leading-tight text-white">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight text-white">
                 Master New Skills with Expert-Led Courses
               </h1>
-              <p className="animate-item text-lg text-gray-100 mb-8 max-w-lg">
+              <p className="text-lg text-gray-100 mb-8 max-w-lg">
                 Join thousands of learners worldwide and unlock your potential with our comprehensive online courses. Learn at your own pace, from anywhere.
               </p>
-              <div className="animate-item flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4">
                 <button className="px-6 py-3 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition">
                   Explore Courses
                 </button>
               </div>
               
-              <div className="animate-item mt-12">
+              <div className="mt-12">
                 <p className="text-gray-400 mb-4">Trusted by learners worldwide</p>
                 <div className="flex flex-wrap gap-6 items-center">
                   <div className="text-gray-400">100,000+ Students</div>
@@ -129,9 +62,9 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="animate-item relative">
+            <div className="relative">
               <div className="relative flex justify-center">
-                <div className="absolute -inset-4 border-2 border-[#D4FF56]/30 rounded-full animate-pulse duration-4000"></div>
+                <div className="absolute -inset-4 border-2 border-[#D4FF56]/30 rounded-full"></div>
                 <div className="absolute -inset-16 border border-[#D4FF56]/20 rounded-full"></div>
                 <div className="absolute -inset-28 border border-[#D4FF56]/10 rounded-full"></div>
                 <div className="relative bg-black p-4 rounded-full border-4 border-[#D4FF56]">
@@ -152,7 +85,7 @@ const LandingPage = () => {
       </section>
       
       {/* Features Section */}
-      <section ref={servicesRef} id="features" className="py-16 px-4 md:px-8 lg:px-12">
+      <section id="features" className="py-16 px-4 md:px-8 lg:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12">
             <div className="inline-block bg-[#D4FF56] px-4 py-1 rounded text-black font-medium mb-4">
@@ -204,7 +137,7 @@ const LandingPage = () => {
             ].map((feature, index) => (
               <div 
                 key={index}
-                className={`service-card p-6 rounded-lg ${feature.dark 
+                className={`p-6 rounded-lg ${feature.dark 
                   ? 'bg-black border border-gray-800 text-white' 
                   : 'bg-[#D4FF56] text-black'}`}
               >
@@ -234,7 +167,7 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section ref={testimonialsRef} id="testimonials" className="py-16 px-4 md:px-8 lg:px-12 bg-gray-900">
+      <section id="testimonials" className="py-16 px-4 md:px-8 lg:px-12 bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12">
             <div className="flex items-center gap-3 mb-4">
@@ -244,7 +177,7 @@ const LandingPage = () => {
             <h2 className="text-3xl font-bold text-white">Student Testimonials</h2>
           </div>
           
-          <div className="testimonial-card p-12 bg-black rounded-lg border border-gray-800">
+          <div className="p-12 bg-black rounded-lg border border-gray-800">
             <div className="grid md:grid-cols-2 gap-12">
               <div>
                 <div className="flex mb-6">
@@ -357,6 +290,12 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
     </div>
   );
 };
