@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
 import { useDispatch } from 'react-redux';
-import { setRole, setUserData, fetchUserData } from '../redux/slices/userSlice';
+import { setRole as setUserRole, setUserData } from '../redux/slices/userSlice';
 import { useNavigate } from 'react-router-dom';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc 
+} from 'firebase/firestore';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -15,62 +23,127 @@ const AuthModal = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
+
+    const auth = getAuth();
+    const db = getFirestore();
 
     try {
       if (isLogin) {
-        // Login
+        // Handle Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        
-        // Fetch user data and role
-        await dispatch(fetchUserData(user.uid, role));
-        
-        // Check if profile is completed
-        const userDoc = await getDoc(doc(db, `${role}s`, user.uid));
-        if (userDoc.exists() && userDoc.data().profileCompleted) {
-          navigate('/dashboard');
-        } else {
-          navigate('/profile');
+
+        // Get user data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists()) {
+          throw new Error('User data not found');
         }
+
+        const userData = userDoc.data();
+        
+        // Get role-specific data
+        const roleDoc = await getDoc(doc(db, `${userData.role}s`, user.uid));
+        const roleData = roleDoc.data();
+
+        const combinedData = {
+          uid: user.uid,
+          email: user.email,
+          ...userData,
+          ...roleData
+        };
+
+        // Update Redux state
+        dispatch(setUserRole(userData.role));
+        dispatch(setUserData(combinedData));
+
+        // Store token
+        const token = await user.getIdToken();
+        localStorage.setItem('authToken', token);
+
+        // Navigate directly to dashboard if profile is completed
+        navigate(roleData.profileCompleted ? '/dashboard' : '/profile');
+
       } else {
-        // Signup
+        // Handle Signup
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        
-        // Store user role in Firestore
+
+        // Create base user document
         await setDoc(doc(db, 'users', user.uid), {
           email: user.email,
           role: role,
           createdAt: new Date().toISOString(),
+          displayName: email.split('@')[0],
+          isVerified: false,
+          lastLogin: new Date().toISOString(),
+          profileCompleted: false
         });
 
-        // Create role-specific data
-        const roleData = {
-          userId: user.uid,
+        // Create role-specific document
+        if (role === 'teacher') {
+          await setDoc(doc(db, 'teachers', user.uid), {
+            userId: user.uid,
+            email: user.email,
+            courses: [],
+            students: [],
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          await setDoc(doc(db, 'students', user.uid), {
+            userId: user.uid,
+            email: user.email,
+            enrolledCourses: [],
+            progress: {},
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        // Get token and update Redux
+        const token = await user.getIdToken();
+        localStorage.setItem('authToken', token);
+
+        dispatch(setUserRole(role));
+        dispatch(setUserData({
+          uid: user.uid,
           email: user.email,
-          createdAt: new Date().toISOString(),
-          profileCompleted: false,
-          ...(role === 'teacher' ? { courses: [], students: [] } : { enrolledCourses: [], progress: {} })
-        };
+          role: role,
+          profileCompleted: false
+        }));
 
-        await setDoc(doc(db, `${role}s`, user.uid), roleData);
-
-        // Dispatch to Redux
-        dispatch(setRole(role));
-        dispatch(setUserData(roleData));
-        const token = await auth.currentUser.getIdToken();
-        console.log(token);
-        
-        // Navigate to profile page
         navigate('/profile');
       }
       onClose();
     } catch (err) {
-      setError(err.message);
+      console.error('Auth error:', err);
+      let errorMessage = 'Authentication failed';
+      
+      switch (err.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          errorMessage = 'Invalid email or password';
+          break;
+        case 'auth/email-already-in-use':
+          errorMessage = 'Email is already registered';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password should be at least 6 characters';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email format';
+          break;
+        default:
+          errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -110,6 +183,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4FF56] focus:border-transparent transition-colors"
                 placeholder="Enter your email"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -122,6 +196,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4FF56] focus:border-transparent transition-colors"
                 placeholder="Enter your password"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -132,6 +207,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={() => setRole('student')}
+                    disabled={isLoading}
                     className={`p-4 rounded-xl border-2 transition-colors ${
                       role === 'student'
                         ? 'border-[#D4FF56] bg-[#D4FF56]/10 text-[#D4FF56]'
@@ -146,6 +222,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={() => setRole('teacher')}
+                    disabled={isLoading}
                     className={`p-4 rounded-xl border-2 transition-colors ${
                       role === 'teacher'
                         ? 'border-[#D4FF56] bg-[#D4FF56]/10 text-[#D4FF56]'
@@ -163,15 +240,19 @@ const AuthModal = ({ isOpen, onClose }) => {
 
             <button
               type="submit"
-              className="w-full py-3 bg-[#D4FF56] text-black font-medium rounded-xl hover:bg-[#D4FF56]/90 transition-colors text-lg"
+              disabled={isLoading}
+              className={`w-full py-3 bg-[#D4FF56] text-black font-medium rounded-xl transition-colors text-lg ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#D4FF56]/90'
+              }`}
             >
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {isLoading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
+              disabled={isLoading}
               className="text-[#D4FF56] hover:text-[#D4FF56]/80 transition-colors"
             >
               {isLogin ? 'Need an account? Sign up' : 'Already have an account? Sign in'}

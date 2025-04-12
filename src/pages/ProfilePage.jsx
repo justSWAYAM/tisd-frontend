@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
-import { auth } from '../firebase/config';
+// import { auth } from '../firebase/config';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -45,19 +45,23 @@ const ProfilePage = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     try {
-      // Check if user is authenticated
-      if (!auth.currentUser) {
+      // Get the authentication token from localStorage instead of Firebase
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
         throw new Error("You are not signed in. Please sign in and try again.");
       }
-
-      // Get the Firebase ID token
-      const token = await auth.currentUser.getIdToken(true); // Force token refresh
       
-      // Update profile using the API
+      // Select the appropriate API endpoint based on role
+      const endpoint = role === 'student' 
+        ? 'http://localhost:4000/api/profile/student/update'
+        : 'http://localhost:4000/api/profile/teacher/update';
+      
+      // Update profile using the API with the token from localStorage
       const response = await axios.put(
-        'http://localhost:4000/api/profile/update',
+        endpoint,
         formData,
         {
           headers: {
@@ -66,7 +70,7 @@ const ProfilePage = () => {
           }
         }
       );
-
+  
       if (response.data.success) {
         // Navigate to dashboard
         navigate('/dashboard');
