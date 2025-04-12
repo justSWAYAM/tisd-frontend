@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AuthModal from '../components/AuthModal';
+import Store from './Store';
 
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -18,7 +19,7 @@ const LandingPage = () => {
           </div>
           
           <div className="hidden md:flex space-x-8">
-            <a href="#courses" className="text-white hover:text-[#D4FF56] transition">Courses</a>
+            <a href="Store" className="text-white hover:text-[#D4FF56] transition">Courses</a>
             <a href="#features" className="text-white hover:text-[#D4FF56] transition">Features</a>
             <a href="#pricing" className="text-white hover:text-[#D4FF56] transition">Pricing</a>
             <a href="#testimonials" className="text-white hover:text-[#D4FF56] transition">Testimonials</a>

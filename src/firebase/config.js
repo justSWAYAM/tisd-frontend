@@ -1,17 +1,21 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDXBD-smLSC6wSntBnDWUplGYLzHjINUGE",
-  authDomain: "tisd-d637e.firebaseapp.com",
-  projectId: "tisd-d637e",
-  storageBucket: "tisd-d637e.firebasestorage.app",
-  messagingSenderId: "331414025036",
-  appId: "1:331414025036:web:4315a31de5b6e4106cd5e9"
+  // Replace with your Firebase config
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
-
 const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 export const auth = getAuth(app);
-export const db = getFirestore(app); 
+
+export default app; 
