@@ -12,6 +12,8 @@
   "dependencies": {
     "@firebase/storage": "^0.13.7",
     "@headlessui/react": "^2.2.1",
+    "@monaco-editor/react": "^4.7.0",
+    "@reduxjs/toolkit": "^2.6.1",
     "@tailwindcss/vite": "^4.0.17",
     "autoprefixer": "^10.4.21",
     "axios": "^1.8.4",

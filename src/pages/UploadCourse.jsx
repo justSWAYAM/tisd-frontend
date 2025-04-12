@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, storage, auth } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const UploadCourse = () => {
   const navigate = useNavigate();
@@ -14,7 +13,7 @@ const UploadCourse = () => {
     duration: '',
     level: 'Beginner',
     category: 'Web Development',
-    thumbnail: null,
+    thumbnailUrl: 'https://placehold.co/600x400?text=Course+Thumbnail', // Default thumbnail
     videoUrl: '',
   });
 
@@ -29,14 +28,6 @@ const UploadCourse = () => {
     }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setCourseData(prev => ({
-      ...prev,
-      thumbnail: file
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -48,18 +39,9 @@ const UploadCourse = () => {
     try {
       setIsUploading(true);
 
-      // Upload thumbnail to Firebase Storage
-      let thumbnailUrl = '';
-      if (courseData.thumbnail) {
-        const storageRef = ref(storage, `course-thumbnails/${Date.now()}-${courseData.thumbnail.name}`);
-        await uploadBytes(storageRef, courseData.thumbnail);
-        thumbnailUrl = await getDownloadURL(storageRef);
-      }
-
       // Add course to Firestore
       const courseRef = await addDoc(collection(db, 'courses'), {
         ...courseData,
-        thumbnail: thumbnailUrl,
         instructor: auth.currentUser.displayName || 'Anonymous',
         instructorId: auth.currentUser.uid,
         rating: 0,
@@ -194,18 +176,38 @@ const UploadCourse = () => {
             </div>
           </div>
 
-          {/* Thumbnail Upload */}
+          {/* Thumbnail URL */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Course Thumbnail
+              Course Thumbnail URL (optional)
             </label>
             <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              required
+              type="url"
+              name="thumbnailUrl"
+              value={courseData.thumbnailUrl}
+              onChange={handleInputChange}
               className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
+              placeholder="https://example.com/image.jpg"
             />
+            <p className="text-gray-500 text-xs mt-1">Leave default to use a placeholder image</p>
+          </div>
+
+          {/* Thumbnail Preview */}
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">
+              Thumbnail Preview
+            </label>
+            <div className="w-full h-40 bg-gray-900 border border-gray-800 rounded overflow-hidden">
+              <img 
+                src={courseData.thumbnailUrl} 
+                alt="Course thumbnail preview" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://placehold.co/600x400?text=Invalid+Image+URL";
+                }}
+              />
+            </div>
           </div>
 
           {/* Video URL */}
@@ -242,4 +244,4 @@ const UploadCourse = () => {
   );
 };
 
-export default UploadCourse; 
+export default UploadCourse;
