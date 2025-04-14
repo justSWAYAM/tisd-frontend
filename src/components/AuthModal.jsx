@@ -69,7 +69,7 @@ const AuthModal = ({ isOpen, onClose }) => {
         // Navigate directly to dashboard if profile is completed
         if (roleData.profileCompleted) {
           // If profile is completed, route based on role
-          navigate(userData.role === "teacher" ? '/lectures' : '/store');
+          navigate(userData.role === "teacher" ? '/lectures' : '/dashboard');
         } else {
           // If profile is not completed, both go to profile page
           navigate('/profile');

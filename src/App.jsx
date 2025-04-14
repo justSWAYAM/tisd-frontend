@@ -11,6 +11,7 @@ import UploadCourse from './pages/UploadCourse';
 import Lectures from './pages/Lectures';
 import AddLectures from './pages/AddLectures';
 import CourseView from './pages/CourseView';
+import StudentDashboard from './pages/StudentDashboard';
 
 function App() {
   return (
@@ -19,7 +20,8 @@ function App() {
         <Routes>
             <Route path='/' element={<LandingPage />} />
             <Route path='/profile' element={<ProfilePage />} />
-            <Route path='/Store' element={<Store />} />
+            <Route path='/store' element={<Store />} />
+            <Route path='/dashboard' element={<StudentDashboard />} />
             <Route path='/Code/:courseId/:lectureId' element={<CodeEditor/>}/>
             <Route path="/upload-course" element={<UploadCourse />} />
             <Route path="/lectures" element={<Lectures />} />
