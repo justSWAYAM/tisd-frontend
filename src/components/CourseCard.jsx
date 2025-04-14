@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
 
 const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
   const { id, title, instructor, price, level, thumbnail, thumbnailUrl, rating } = course;
   const [imageError, setImageError] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const navigate = useNavigate();
 
   const defaultThumbnail = 'https://placehold.co/600x400?text=Course+Thumbnail';
@@ -11,6 +14,58 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
 
   const handleImageError = () => {
     setImageError(true);
+  };
+
+  const handleEnrollment = async () => {
+    if (!auth.currentUser) {
+      alert('Please login to enroll in courses');
+      navigate('/login');
+      return;
+    }
+
+    setIsEnrolling(true);
+    try {
+      // Get the student document from students collection
+      const studentRef = doc(db, 'students', auth.currentUser.uid);
+      const studentDoc = await getDoc(studentRef);
+      const studentData = studentDoc.data();
+
+      // Prepare the new enrolled course data
+      const enrollmentData = {
+        courseId: id,
+        enrolledAt: new Date().toISOString(),
+        progress: 0,
+        completedLectures: []
+      };
+
+      // Update student document with new enrolled course
+      await updateDoc(studentRef, {
+        enrolledCourses: studentData.enrolledCourses 
+          ? [...studentData.enrolledCourses, enrollmentData]
+          : [enrollmentData],
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update course's studentsEnrolled count
+      const courseRef = doc(db, 'courses', id);
+      const courseDoc = await getDoc(courseRef);
+      await updateDoc(courseRef, {
+        studentsEnrolled: (courseDoc.data().studentsEnrolled || 0) + 1
+      });
+
+      // Call the onEnroll callback if provided
+      if (onEnroll) {
+        onEnroll(id);
+      }
+
+      // Navigate to course view
+      navigate(`/course/${id}`);
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+      alert('Failed to enroll in course. Please try again.');
+    } finally {
+      setIsEnrolling(false);
+    }
   };
 
   return (
@@ -67,15 +122,21 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
             </div>
           ) : (
             <button 
-              onClick={onEnroll}
-              disabled={isEnrolled}
+              onClick={handleEnrollment}
+              disabled={isEnrolled || isEnrolling}
               className={`px-4 py-2 ${
                 isEnrolled 
                   ? 'bg-gray-600 cursor-not-allowed' 
+                  : isEnrolling
+                  ? 'bg-gray-600 cursor-not-allowed'
                   : 'bg-[#D4FF56] hover:bg-[#D4FF56]/90'
               } text-black font-medium rounded transition`}
             >
-              {isEnrolled ? 'Enrolled' : 'Enroll Now'}
+              {isEnrolled 
+                ? 'Enrolled' 
+                : isEnrolling 
+                ? 'Enrolling...' 
+                : 'Enroll Now'}
             </button>
           )}
         </div>

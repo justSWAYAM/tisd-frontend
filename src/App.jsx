@@ -12,6 +12,7 @@ import Lectures from './pages/Lectures';
 import AddLectures from './pages/AddLectures';
 import CourseView from './pages/CourseView';
 import StudentDashboard from './pages/StudentDashboard';
+import Chat from './components/Chat';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/lectures" element={<Lectures />} />
             <Route path="/add-lectures/:courseId" element={<AddLectures />} />
             <Route path="/course/:courseId" element={<CourseView />} />
+            <Route path="/chat" element={<Chat />} />
         </Routes>
       </Router>
     </Provider>

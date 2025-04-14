@@ -6,6 +6,7 @@ import Editor from '@monaco-editor/react';
 import Navbar from './Navbar';
 import YouTube from 'react-youtube';
 import Split from 'react-split';
+import { useSelector } from 'react-redux'; // Add this import
 
 const CodeEditor = () => {
   const { courseId, lectureId } = useParams();
@@ -19,9 +20,18 @@ const CodeEditor = () => {
   const [activeTab, setActiveTab] = useState('output');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isTerminalVisible, setIsTerminalVisible] = useState(false);
+  const { userData } = useSelector(state => state.user); // Add this line
+
+  // Add function to check if user is teacher of this course
+  const isTeacherOfCourse = (course) => {
+    return course?.instructorId === userData?.userId;
+  };
+
+  // Add course state and fetch course details
+  const [course, setCourse] = useState(null);
   
   // Sample YouTube video ID (replace with your actual coding tutorial video ID)
-  const videoId = "PkZNo7MFNFg";
+ 
 
   function getInitialCode(language) {
     const initialCode = {
@@ -191,24 +201,25 @@ public class Main {
   };
 
   useEffect(() => {
-    const fetchLecture = async () => {
+    const fetchCourseAndLecture = async () => {
       try {
         const courseRef = doc(db, 'courses', courseId);
         const courseSnap = await getDoc(courseRef);
         
         if (courseSnap.exists()) {
-          const course = courseSnap.data();
-          const lecture = course.lectures.find(l => l.id === lectureId);
+          const courseData = { id: courseSnap.id, ...courseSnap.data() };
+          setCourse(courseData);
+          const lecture = courseData.lectures.find(l => l.id === lectureId);
           setLecture(lecture);
         }
       } catch (err) {
-        console.error('Error fetching lecture:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLecture();
+    fetchCourseAndLecture();
   }, [courseId, lectureId]);
 
   // Function to extract YouTube video ID from URL
@@ -217,6 +228,14 @@ public class Main {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const handleBack = () => {
+    if (isTeacherOfCourse(course)) {
+      navigate(`/add-lectures/${courseId}`);
+    } else {
+      navigate('/store');
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-black text-white p-8">Loading...</div>;
@@ -228,13 +247,13 @@ public class Main {
       <div className="w-full px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <button 
-            onClick={() => navigate(`/add-lectures/${courseId}`)}
+            onClick={handleBack}
             className="text-gray-400 hover:text-white flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            {isTeacherOfCourse(course) ? 'Back to Lectures' : 'Back to Store'}
           </button>
           {lecture?.title && (
             <h2 className="text-sm font-medium text-gray-400 truncate max-w-md">

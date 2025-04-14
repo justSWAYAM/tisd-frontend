@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { userData } = useSelector(state => state.user);
+  const isTeacher = userData?.role === 'teacher';
 
   return (
     <nav className="bg-black border-b border-gray-800">
@@ -20,17 +23,48 @@ const Navbar = () => {
           {/* Navigation Links */}
           <div className="flex items-center space-x-4">
             <Link 
-              to="/"
+              to="/store"
               className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
             >
-              Home
+              Browse Courses
             </Link>
-            <Link
-              to="/upload-course"
-              className="bg-[#D4FF56] text-black px-4 py-2 rounded-md text-sm font-medium hover:bg-[#D4FF56]/90 transition"
-            >
-              Upload Course
-            </Link>
+            
+            {isTeacher ? (
+              <Link
+                to="/upload-course"
+                className="bg-[#D4FF56] text-black px-4 py-2 rounded-md text-sm font-medium hover:bg-[#D4FF56]/90 transition"
+              >
+                Upload Course
+              </Link>
+            ) : (
+              <Link
+                to="/dashboard"
+                className="bg-[#D4FF56] text-black px-4 py-2 rounded-md text-sm font-medium hover:bg-[#D4FF56]/90 transition"
+              >
+                My Dashboard
+              </Link>
+            )}
+
+            {userData ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-300 text-sm">
+                  {userData.name}
+                </span>
+                <button
+                  onClick={() => {/* Add logout handler */}}
+                  className="text-gray-300 hover:text-white text-sm font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>
