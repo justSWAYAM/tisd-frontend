@@ -234,7 +234,7 @@ public class Main {
     if (isTeacherOfCourse(course)) {
       navigate(`/add-lectures/${courseId}`);
     } else {
-      navigate('/store');
+      navigate('/dashboard');
     }
   };
 
@@ -253,7 +253,7 @@ public class Main {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            {isTeacherOfCourse(course) ? 'Back to Lectures' : 'Back to Store'}
+            {isTeacherOfCourse(course) ? 'Back to Lectures' : 'Back to Dashboard'}
           </button>
           {lecture?.title && (
             <h2 className="text-sm font-medium text-gray-400 truncate max-w-md">

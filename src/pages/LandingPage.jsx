@@ -15,7 +15,7 @@ const LandingPage = () => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user && userData) {
         // Redirect based on role if user is authenticated
-        navigate(userData.role === 'teacher' ? '/lectures' : '/store');
+        navigate(userData.role === 'teacher' ? '/lectures' : '/dashboard');
       }
     });
 
@@ -25,7 +25,7 @@ const LandingPage = () => {
   const handleStartLearning = () => {
     if (auth.currentUser && userData) {
       // User is logged in, redirect based on role
-      navigate(userData.role === 'teacher' ? '/lectures' : '/store');
+      navigate(userData.role === 'teacher' ? '/lectures' : '/dashboard');
     } else {
       // User is not logged in, show auth modal
       setIsAuthModalOpen(true);

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, redirect, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { auth } from '../firebase/config';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -45,13 +46,13 @@ const Navbar = () => {
               </Link>
             )}
 
-            {userData ? (
+            {auth.currentUser.uid ? (
               <div className="flex items-center space-x-4">
                 <span className="text-gray-300 text-sm">
-                  {userData.name}
+                  {auth.currentUser.name}
                 </span>
                 <button
-                  onClick={() => {/* Add logout handler */}}
+                  onClick={navigate("/store")}
                   className="text-gray-300 hover:text-white text-sm font-medium"
                 >
                   Logout
