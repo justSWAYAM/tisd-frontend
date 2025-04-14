@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import Store from './pages/Store';
 import CodeEditor from './components/CodeEditor'
 import UploadCourse from './pages/UploadCourse';
+import Lectures from './pages/Lectures';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path='/Store' element={<Store />} />
             <Route path='/Code' element={<CodeEditor/>}/>
             <Route path="/upload-course" element={<UploadCourse />} />
+            <Route path="/lectures" element={<Lectures />} />
         </Routes>
       </Router>
     </Provider>

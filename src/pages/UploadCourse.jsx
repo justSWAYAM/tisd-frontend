@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { db, auth } from '../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
+import { addCourse } from '../redux/slices/coursesSlice';
 
 const UploadCourse = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isUploading, setIsUploading] = useState(false);
   const [courseData, setCourseData] = useState({
     title: '',
-    description: '',
     price: '',
-    duration: '',
     level: 'Beginner',
     category: 'Web Development',
-    thumbnailUrl: 'https://placehold.co/600x400?text=Course+Thumbnail', // Default thumbnail
-    videoUrl: '',
+    thumbnailUrl: 'https://placehold.co/600x400?text=Course+Thumbnail',
   });
 
   const categories = ["Web Development", "Data Science", "Mobile Development", "Design", "Business"];
@@ -39,19 +39,26 @@ const UploadCourse = () => {
     try {
       setIsUploading(true);
 
-      // Add course to Firestore
-      const courseRef = await addDoc(collection(db, 'courses'), {
+      // Create new course object with existing data and additional fields
+      const newCourse = {
         ...courseData,
+        description: `A comprehensive ${courseData.level} level course in ${courseData.category}`,
         instructor: auth.currentUser.displayName || 'Anonymous',
         instructorId: auth.currentUser.uid,
         rating: 0,
         studentsEnrolled: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      };
+
+      // Add to Firestore
+      const courseRef = await addDoc(collection(db, 'courses'), newCourse);
+
+      // Add to Redux with Firestore ID
+      dispatch(addCourse({ id: courseRef.id, ...newCourse }));
 
       alert('Course uploaded successfully!');
-      navigate('/store');
+      navigate('/lectures');
     } catch (error) {
       console.error('Error uploading course:', error);
       alert('Error uploading course. Please try again.');
@@ -89,55 +96,22 @@ const UploadCourse = () => {
             />
           </div>
 
-          {/* Course Description */}
+          {/* Price */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Course Description
+              Price (USD)
             </label>
-            <textarea
-              name="description"
+            <input
+              type="number"
+              name="price"
               required
-              value={courseData.description}
+              min="0"
+              step="0.01"
+              value={courseData.price}
               onChange={handleInputChange}
-              rows="4"
               className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
-              placeholder="Enter course description"
+              placeholder="29.99"
             />
-          </div>
-
-          {/* Price and Duration */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Price (USD)
-              </label>
-              <input
-                type="number"
-                name="price"
-                required
-                min="0"
-                step="0.01"
-                value={courseData.price}
-                onChange={handleInputChange}
-                className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
-                placeholder="29.99"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Duration (hours)
-              </label>
-              <input
-                type="number"
-                name="duration"
-                required
-                min="1"
-                value={courseData.duration}
-                onChange={handleInputChange}
-                className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
-                placeholder="10"
-              />
-            </div>
           </div>
 
           {/* Category and Level */}
@@ -179,17 +153,17 @@ const UploadCourse = () => {
           {/* Thumbnail URL */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Course Thumbnail URL (optional)
+              Course Thumbnail URL
             </label>
             <input
               type="url"
               name="thumbnailUrl"
+              required
               value={courseData.thumbnailUrl}
               onChange={handleInputChange}
               className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
               placeholder="https://example.com/image.jpg"
             />
-            <p className="text-gray-500 text-xs mt-1">Leave default to use a placeholder image</p>
           </div>
 
           {/* Thumbnail Preview */}
@@ -208,22 +182,6 @@ const UploadCourse = () => {
                 }}
               />
             </div>
-          </div>
-
-          {/* Video URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Course Video URL (YouTube)
-            </label>
-            <input
-              type="url"
-              name="videoUrl"
-              required
-              value={courseData.videoUrl}
-              onChange={handleInputChange}
-              className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
-              placeholder="https://youtube.com/watch?v=..."
-            />
           </div>
 
           {/* Submit Button */}

@@ -1,9 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { auth } from '../firebase/config';
 import AuthModal from '../components/AuthModal';
 import Store from './Store';
 
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const { userData } = useSelector(state => state.user);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user && userData) {
+        // Redirect based on role if user is authenticated
+        navigate(userData.role === 'teacher' ? '/lectures' : '/store');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [userData, navigate]);
+
+  const handleStartLearning = () => {
+    if (auth.currentUser && userData) {
+      // User is logged in, redirect based on role
+      navigate(userData.role === 'teacher' ? '/lectures' : '/store');
+    } else {
+      // User is not logged in, show auth modal
+      setIsAuthModalOpen(true);
+    }
+  };
 
   return (
     <div className="bg-black text-white min-h-screen overflow-x-hidden">
@@ -27,7 +54,7 @@ const LandingPage = () => {
           
           <div>
             <button 
-              onClick={() => setIsAuthModalOpen(true)}
+              onClick={handleStartLearning}
               className="px-5 py-2 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition"
             >
               Start Learning
@@ -292,11 +319,13 @@ const LandingPage = () => {
         </div>
       </footer>
 
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
+      {/* Auth Modal - only show if user is not logged in */}
+      {!userData && (
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          onClose={() => setIsAuthModalOpen(false)} 
+        />
+      )}
     </div>
   );
 };

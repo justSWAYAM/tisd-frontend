@@ -67,7 +67,13 @@ const AuthModal = ({ isOpen, onClose }) => {
         localStorage.setItem('authToken', token);
 
         // Navigate directly to dashboard if profile is completed
-        navigate(roleData.profileCompleted ? '/dashboard' : '/profile');
+        if (roleData.profileCompleted) {
+          // If profile is completed, route based on role
+          navigate(userData.role === "teacher" ? '/lectures' : '/store');
+        } else {
+          // If profile is not completed, both go to profile page
+          navigate('/profile');
+        }
 
       } else {
         // Handle Signup
