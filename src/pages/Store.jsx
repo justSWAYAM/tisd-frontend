@@ -71,8 +71,8 @@ const Store = () => {
         );
     }
   };
- const a = auth.currentUser.uid;
- console.log(a);
+ 
+ 
   const filteredCourses = getSortedCourses(
     courses.filter(course => {
       const matchesSearch = 

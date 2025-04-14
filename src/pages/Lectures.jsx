@@ -1,25 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db } from '../firebase/config';
+import { checkAuth } from '../utils/auth';
 import CourseCard from '../components/CourseCard';
 import Navbar from '../components/Navbar';
+import { useNavigate } from 'react-router-dom';
 
 const Lectures = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTeacherCourses = async () => {
-      if (!auth.currentUser) {
-        console.log('No authenticated user');
+      const userData = checkAuth();
+      
+      if (!userData) {
+        navigate('/login');
+        return;
+      }
+
+      if (userData.role !== 'teacher') {
+        navigate('/store');
         return;
       }
 
       try {
         setLoading(true);
         const coursesRef = collection(db, 'courses');
-        const q = query(coursesRef, where('instructorId', '==', auth.currentUser.uid));
+        const q = query(coursesRef, where('instructorId', '==', userData.uid));
         const querySnapshot = await getDocs(q);
         
         const fetchedCourses = [];
@@ -38,10 +48,7 @@ const Lectures = () => {
     };
 
     fetchTeacherCourses();
-  }, []);
-
-  if (loading) return <div className="min-h-screen bg-black text-white p-8">Loading...</div>;
-  if (error) return <div className="min-h-screen bg-black text-white p-8">Error: {error}</div>;
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -50,10 +57,20 @@ const Lectures = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Courses</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-[#D4FF56] to-white text-transparent bg-clip-text">
+            My Courses
+          </h1>
         </div>
         
-        {courses.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-400">Loading courses...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 text-red-500">
+            <p>Error: {error}</p>
+          </div>
+        ) : courses.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-400">You haven't uploaded any courses yet.</p>
           </div>

@@ -1,12 +1,146 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import Editor from '@monaco-editor/react';
 import Navbar from './Navbar';
 import YouTube from 'react-youtube';
 import Split from 'react-split';
 import { checkAuth } from '../utils/auth';
+
+const Quiz = ({ quiz, onSubmit }) => {
+  const [answers, setAnswers] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [results, setResults] = useState([]);
+  const [validationError, setValidationError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validate that all questions are answered
+    if (Object.keys(answers).length !== quiz.questions.length) {
+      setValidationError('Please answer all questions before submitting.');
+      return;
+    }
+    
+    setValidationError('');
+    let correct = 0;
+    const questionResults = [];
+
+    quiz.questions.forEach((question, index) => {
+      const isCorrect = parseInt(answers[index]) === question.correctAnswer;
+      if (isCorrect) correct++;
+      
+      questionResults.push({
+        question: question.questionText,
+        userAnswer: question.options[parseInt(answers[index])],
+        correctAnswer: question.options[question.correctAnswer],
+        isCorrect
+      });
+    });
+
+    const finalScore = (correct / quiz.questions.length) * 100;
+    setScore(finalScore);
+    setResults(questionResults);
+    setSubmitted(true);
+    onSubmit(finalScore, true, questionResults); // Pass score, attempted status, and results
+  };
+
+  return (
+    <div className="bg-gray-900 rounded-lg p-6 mb-6">
+      <h3 className="text-xl font-bold text-[#D4FF56] mb-4">Lecture Quiz</h3>
+      <form onSubmit={handleSubmit}>
+        {quiz.questions.map((question, qIndex) => (
+          <div key={qIndex} className="mb-6 border-b border-gray-800 pb-4">
+            <p className="text-white mb-3">{question.questionText}</p>
+            <div className="space-y-2">
+              {question.options.map((option, oIndex) => (
+                <label 
+                  key={oIndex} 
+                  className={`flex items-center space-x-3 p-2 rounded ${
+                    submitted && answers[qIndex] === oIndex.toString()
+                      ? question.correctAnswer === oIndex
+                        ? 'bg-green-900/20'
+                        : 'bg-red-900/20'
+                      : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`question-${qIndex}`}
+                    value={oIndex}
+                    onChange={(e) => setAnswers(prev => ({
+                      ...prev,
+                      [qIndex]: e.target.value
+                    }))}
+                    disabled={submitted}
+                    className="text-[#D4FF56] focus:ring-[#D4FF56]"
+                  />
+                  <span className={`text-gray-300 ${
+                    submitted && question.correctAnswer === oIndex 
+                      ? 'text-green-400 font-medium'
+                      : ''
+                  }`}>
+                    {option}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {submitted && (
+              <div className="mt-2 text-sm">
+                {parseInt(answers[qIndex]) === question.correctAnswer ? (
+                  <span className="text-green-400">✓ Correct</span>
+                ) : (
+                  <div className="text-red-400">
+                    ✗ Incorrect. Correct answer: {question.options[question.correctAnswer]}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {!submitted ? (
+          <button
+            type="submit"
+            className="w-full py-2 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition"
+          >
+            Submit Quiz
+          </button>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-gray-800 rounded-lg">
+              <p className="text-xl font-bold text-[#D4FF56] mb-2">
+                Your Score: {score.toFixed(1)}%
+              </p>
+              <p className="text-gray-400">
+                {score === 100 
+                  ? 'Perfect score! 🎉' 
+                  : score >= 70 
+                    ? 'Good job! 👍' 
+                    : 'Keep practicing! 💪'}
+              </p>
+            </div>
+            
+            {results.filter(r => !r.isCorrect).length > 0 && (
+              <div className="mt-4 p-4 bg-red-900/20 rounded-lg">
+                <h4 className="text-red-400 font-medium mb-2">Review Incorrect Answers:</h4>
+                {results.filter(r => !r.isCorrect).map((result, index) => (
+                  <div key={index} className="mb-2 text-sm text-gray-300">
+                    <p className="font-medium text-white">{result.question}</p>
+                    <p className="text-red-400">Your answer: {result.userAnswer}</p>
+                    <p className="text-green-400">Correct answer: {result.correctAnswer}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+};
 
 const CodeEditor = () => {
   const { courseId, lectureId } = useParams();
@@ -21,6 +155,10 @@ const CodeEditor = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isTerminalVisible, setIsTerminalVisible] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [hasAttemptedQuiz, setHasAttemptedQuiz] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizResults, setQuizResults] = useState([]);
 
   useEffect(() => {
     const user = checkAuth();
@@ -216,8 +354,11 @@ public class Main {
         if (courseSnap.exists()) {
           const courseData = { id: courseSnap.id, ...courseSnap.data() };
           setCourse(courseData);
+          // Find lecture with its quiz data
           const lecture = courseData.lectures.find(l => l.id === lectureId);
-          setLecture(lecture);
+          if (lecture) {
+            setLecture(lecture);
+          }
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -228,6 +369,39 @@ public class Main {
 
     fetchCourseAndLecture();
   }, [courseId, lectureId]);
+
+  // Add this useEffect after other useEffects
+  useEffect(() => {
+    // Check if user has attempted this quiz before
+    const hasAttempted = localStorage.getItem(`quiz_${lectureId}_attempted`);
+    if (hasAttempted === 'true') {
+      setHasAttemptedQuiz(true);
+      setQuizSubmitted(true);
+    }
+  }, [lectureId]);
+
+  useEffect(() => {
+    const fetchQuizData = async () => {
+      if (userData?.userId && lecture?.hasQuiz) {
+        try {
+          const quizAttemptRef = doc(db, 'quizAttempts', `${userData.userId}_${lectureId}`);
+          const quizAttemptDoc = await getDoc(quizAttemptRef);
+          
+          if (quizAttemptDoc.exists()) {
+            const quizData = quizAttemptDoc.data();
+            setHasAttemptedQuiz(true);
+            setQuizSubmitted(true);
+            setQuizScore(quizData.score);
+            setQuizResults(quizData.results || []);
+          }
+        } catch (error) {
+          console.error('Error fetching quiz data:', error);
+        }
+      }
+    };
+
+    fetchQuizData();
+  }, [lectureId, userData?.userId, lecture?.hasQuiz]);
 
   // Function to extract YouTube video ID from URL
   const getYouTubeVideoId = (url) => {
@@ -418,6 +592,66 @@ public class Main {
             </div>
           </div>
         </Split>
+
+        {/* Quiz Section */}
+        {lecture?.quiz && !hasAttemptedQuiz && (
+          <div className="mt-6 mb-6">
+            <Quiz 
+              quiz={lecture.quiz}
+              onSubmit={async (score, attempted, results) => {
+                try {
+                  // Store quiz attempt in database
+                  const quizAttemptRef = doc(db, 'quizAttempts', `${userData.userId}_${lectureId}`);
+                  await setDoc(quizAttemptRef, {
+                    userId: userData.userId,
+                    lectureId: lectureId,
+                    courseId: courseId,
+                    score: score,
+                    completedAt: new Date().toISOString(),
+                    results: results
+                  });
+
+                  setQuizSubmitted(true);
+                  setHasAttemptedQuiz(attempted);
+                  setQuizScore(score);
+                  setQuizResults(results);
+                } catch (error) {
+                  console.error('Error saving quiz attempt:', error);
+                  alert('Failed to save quiz results');
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Quiz Results Section - Show when quiz is completed */}
+        {hasAttemptedQuiz && (
+          <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+            <h4 className="text-[#D4FF56] font-medium mb-4">Quiz Results</h4>
+            <div className="space-y-4">
+              <div className="text-center p-4 bg-gray-900 rounded">
+                <p className="text-2xl font-bold text-[#D4FF56]">
+                  Score: {quizScore.toFixed(1)}%
+                </p>
+                <p className="text-gray-400 mt-2">
+                  {quizScore === 100 ? '🎉 Perfect!' : quizScore >= 70 ? '👍 Well done!' : '💪 Keep practicing!'}
+                </p>
+              </div>
+              {quizResults.filter(r => !r.isCorrect).length > 0 && (
+                <div className="mt-4 p-4 bg-red-900/20 rounded-lg">
+                  <h4 className="text-red-400 font-medium mb-2">Review Incorrect Answers:</h4>
+                  {quizResults.filter(r => !r.isCorrect).map((result, index) => (
+                    <div key={index} className="mb-2 text-sm text-gray-300">
+                      <p className="font-medium text-white">{result.question}</p>
+                      <p className="text-red-400">Your answer: {result.userAnswer}</p>
+                      <p className="text-green-400">Correct answer: {result.correctAnswer}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Move Instructions to a collapsible panel */}
         <div className="mt-6">

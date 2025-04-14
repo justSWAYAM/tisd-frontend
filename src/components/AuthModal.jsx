@@ -61,7 +61,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
         // Navigate based on profile completion
         if (roleData.profileCompleted) {
-          navigate(userData.role === "teacher" ? '/lectures' : '/store');
+          navigate(userData.role === "teacher" ? '/lectures' : '/dashboard');
         } else {
           navigate('/profile');
         }
