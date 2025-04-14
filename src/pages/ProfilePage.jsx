@@ -1,45 +1,74 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import axios from 'axios';
-// import { auth } from '../firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
+import { checkAuth } from '../utils/auth';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { role, data } = useSelector((state) => state.user);
-  const [formData, setFormData] = useState(
-    role === 'student'
-      ? {
-          name: '',
-          school: '',
-          class: '',
-          age: '',
-          degree: '',
-        }
-      : {
-          name: '',
-          currentOrganization: '',
-          experience: '',
-          qualification: '',
-          mobileNo: '',
-        }
-  );
+  const [userData, setUserData] = useState(null);
+  const [formData, setFormData] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Pre-fill form data if available in Redux store
   useEffect(() => {
-    if (data) {
-      // Only update fields that exist in the current form
-      const updatedFormData = { ...formData };
-      Object.keys(formData).forEach(key => {
-        if (data[key]) {
-          updatedFormData[key] = data[key];
-        }
-      });
-      setFormData(updatedFormData);
+    const user = checkAuth();
+    if (user) {
+      setUserData(user);
+      setFormData(
+        user.role === 'student'
+          ? {
+              name: user.name || '',
+              school: user.school || '',
+              class: user.class || '',
+              age: user.age || '',
+              degree: user.degree || '',
+            }
+          : {
+              name: user.name || '',
+              currentOrganization: user.currentOrganization || '',
+              experience: user.experience || '',
+              qualification: user.qualification || '',
+              mobileNo: user.mobileNo || '',
+            }
+      );
     }
-  }, [data]);
+  }, []);
+
+  const validateStudentProfile = (profileData) => {
+    const requiredFields = ['name', 'school', 'class', 'age', 'degree'];
+    const missingFields = requiredFields.filter(field => !profileData[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    if (isNaN(profileData.age) || profileData.age < 10 || profileData.age > 100) {
+      throw new Error('Age must be between 10 and 100');
+    }
+
+    const validDegrees = ['BTech/BE', 'SSC', 'HSC'];
+    if (!validDegrees.includes(profileData.degree)) {
+      throw new Error('Invalid degree selected');
+    }
+  };
+
+  const validateTeacherProfile = (profileData) => {
+    const requiredFields = ['name', 'currentOrganization', 'experience', 'qualification', 'mobileNo'];
+    const missingFields = requiredFields.filter(field => !profileData[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    if (isNaN(profileData.experience) || profileData.experience < 0) {
+      throw new Error('Experience must be a positive number');
+    }
+
+    if (!/^\d{10}$/.test(profileData.mobileNo)) {
+      throw new Error('Mobile number must be 10 digits');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,37 +76,34 @@ const ProfilePage = () => {
     setLoading(true);
   
     try {
-      // Get the authentication token from localStorage instead of Firebase
-      const token = localStorage.getItem('authToken');
-      
-      if (!token) {
+      if (!auth.currentUser) {
         throw new Error("You are not signed in. Please sign in and try again.");
       }
-      
-      // Select the appropriate API endpoint based on role
-      const endpoint = role === 'student' 
-        ? 'http://localhost:4000/api/profile/student/update'
-        : 'http://localhost:4000/api/profile/teacher/update';
-      
-      // Update profile using the API with the token from localStorage
-      const response = await axios.put(
-        endpoint,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-  
-      if (response.data.success) {
-        // Navigate to dashboard
-        navigate('/dashboard');
+
+      // Validate based on role
+      if (userData.role === 'student') {
+        validateStudentProfile(formData);
+      } else {
+        validateTeacherProfile(formData);
       }
+
+      // Get the correct collection reference based on role
+      const collection = userData.role === 'student' ? 'students' : 'teachers';
+      const userRef = doc(db, collection, auth.currentUser.uid);
+
+      // Update profile in Firestore
+      await updateDoc(userRef, {
+        ...formData,
+        profileCompleted: true,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Navigate to dashboard on success
+      navigate(userData.role === 'student' ? '/store' : '/lectures');
+      
     } catch (error) {
       console.error('Error updating profile:', error);
-      setError(error.response?.data?.message || 'Failed to update profile. Please try signing in again.');
+      setError(error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -91,7 +117,7 @@ const ProfilePage = () => {
             Complete Your Profile
           </h1>
           <p className="text-gray-400">
-            Help us personalize your {role === 'student' ? 'learning' : 'teaching'} experience
+            Help us personalize your {userData?.role === 'student' ? 'learning' : 'teaching'} experience
           </p>
         </div>
 
@@ -119,7 +145,7 @@ const ProfilePage = () => {
               />
             </div>
 
-            {role === 'student' ? (
+            {userData?.role === 'student' ? (
               <>
                 {/* School Input */}
                 <div className="space-y-2">

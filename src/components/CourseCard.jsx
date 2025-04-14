@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db } from '../firebase/config';
+import { checkAuth } from '../utils/auth';
 
-const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
+const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled: initialIsEnrolled }) => {
   const { id, title, instructor, price, level, thumbnail, thumbnailUrl, rating } = course;
   const [imageError, setImageError] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(initialIsEnrolled);
   const navigate = useNavigate();
+
+  // Update local state when prop changes
+  useEffect(() => {
+    setIsEnrolled(initialIsEnrolled);
+  }, [initialIsEnrolled]);
 
   const defaultThumbnail = 'https://placehold.co/600x400?text=Course+Thumbnail';
   const imageUrl = thumbnailUrl || thumbnail || defaultThumbnail;
@@ -17,7 +24,9 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
   };
 
   const handleEnrollment = async () => {
-    if (!auth.currentUser) {
+    const userData = checkAuth();
+    
+    if (!userData) {
       alert('Please login to enroll in courses');
       navigate('/login');
       return;
@@ -25,12 +34,10 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
 
     setIsEnrolling(true);
     try {
-      // Get the student document from students collection
-      const studentRef = doc(db, 'students', auth.currentUser.uid);
+      const studentRef = doc(db, 'students', userData.uid);
       const studentDoc = await getDoc(studentRef);
       const studentData = studentDoc.data();
 
-      // Prepare the new enrolled course data
       const enrollmentData = {
         courseId: id,
         enrolledAt: new Date().toISOString(),
@@ -38,7 +45,7 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
         completedLectures: []
       };
 
-      // Update student document with new enrolled course
+      // Update student document
       await updateDoc(studentRef, {
         enrolledCourses: studentData.enrolledCourses 
           ? [...studentData.enrolledCourses, enrollmentData]
@@ -52,6 +59,15 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
       await updateDoc(courseRef, {
         studentsEnrolled: (courseDoc.data().studentsEnrolled || 0) + 1
       });
+
+      // Update local storage with new enrollment
+      const currentUserData = JSON.parse(localStorage.getItem('userData'));
+      currentUserData.enrolledCourses = currentUserData.enrolledCourses || [];
+      currentUserData.enrolledCourses.push(enrollmentData);
+      localStorage.setItem('userData', JSON.stringify(currentUserData));
+
+      // Update local state
+      setIsEnrolled(true);
 
       // Call the onEnroll callback if provided
       if (onEnroll) {
@@ -68,8 +84,26 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
     }
   };
 
+  const handleCardClick = () => {
+    if (isTeacher) {
+      navigate(`/add-lectures/${id}`);
+    } else if (isEnrolled) {
+      navigate(`/course/${id}`);
+    }
+  };
+
+  const handleEnrollClick = (e) => {
+    e.stopPropagation(); // Prevent card click when clicking enroll button
+    handleEnrollment();
+  };
+
   return (
-    <div className="bg-black border border-gray-800 rounded-lg overflow-hidden hover:border-[#D4FF56] transition-all duration-300">
+    <div 
+      onClick={handleCardClick}
+      className={`bg-black border border-gray-800 rounded-lg overflow-hidden 
+        hover:border-[#D4FF56] transition-all duration-300 
+        ${(isEnrolled || isTeacher) ? 'cursor-pointer' : 'cursor-default'}`}
+    >
       <div className="relative">
         <img 
           src={imageError ? defaultThumbnail : imageUrl}
@@ -106,23 +140,29 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
         <div className="flex items-center justify-between">
           <span className="text-2xl font-bold text-white">${price}</span>
           {isTeacher ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2" onClick={e => e.stopPropagation()}>
               <button 
                 className="px-4 py-2 bg-red-500 text-white font-medium rounded hover:bg-red-600 transition"
-                onClick={() => {/* Handle remove functionality */}}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  /* Handle remove functionality */
+                }}
               >
                 Remove
               </button>
               <button 
                 className="px-4 py-2 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition"
-                onClick={() => navigate(`/add-lectures/${id}`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/add-lectures/${id}`);
+                }}
               >
                 Add Lectures
               </button>
             </div>
           ) : (
             <button 
-              onClick={handleEnrollment}
+              onClick={handleEnrollClick}
               disabled={isEnrolled || isEnrolling}
               className={`px-4 py-2 ${
                 isEnrolled 
@@ -133,7 +173,7 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled }) => {
               } text-black font-medium rounded transition`}
             >
               {isEnrolled 
-                ? 'Enrolled' 
+                ? 'View Course' 
                 : isEnrolling 
                 ? 'Enrolling...' 
                 : 'Enroll Now'}

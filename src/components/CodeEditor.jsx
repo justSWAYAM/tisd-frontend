@@ -6,7 +6,7 @@ import Editor from '@monaco-editor/react';
 import Navbar from './Navbar';
 import YouTube from 'react-youtube';
 import Split from 'react-split';
-import { useSelector } from 'react-redux'; // Add this import
+import { checkAuth } from '../utils/auth';
 
 const CodeEditor = () => {
   const { courseId, lectureId } = useParams();
@@ -20,7 +20,14 @@ const CodeEditor = () => {
   const [activeTab, setActiveTab] = useState('output');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isTerminalVisible, setIsTerminalVisible] = useState(false);
-  const { userData } = useSelector(state => state.user); // Add this line
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const user = checkAuth();
+    if (user) {
+      setUserData(user);
+    }
+  }, []);
 
   // Add function to check if user is teacher of this course
   const isTeacherOfCourse = (course) => {

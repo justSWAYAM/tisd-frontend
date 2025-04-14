@@ -1,33 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { auth } from '../firebase/config';
+
 import AuthModal from '../components/AuthModal';
-import Store from './Store';
+import { checkAuth } from '../utils/auth';
 
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
-  const { userData } = useSelector(state => state.user);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user && userData) {
-        // Redirect based on role if user is authenticated
-        navigate(userData.role === 'teacher' ? '/lectures' : '/store');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [userData, navigate]);
+    const user = checkAuth();
+    if (user) {
+      setUserData(user);
+      navigate(user.role === 'teacher' ? '/lectures' : '/store');
+    }
+  }, [navigate]);
 
   const handleStartLearning = () => {
-    if (auth.currentUser && userData) {
-      // User is logged in, redirect based on role
-      navigate(userData.role === 'teacher' ? '/lectures' : '/store');
+    const user = checkAuth();
+    if (user) {
+      navigate(user.role === 'teacher' ? '/lectures' : '/store');
     } else {
-      // User is not logged in, show auth modal
       setIsAuthModalOpen(true);
     }
   };

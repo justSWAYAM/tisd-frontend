@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { useDispatch } from 'react-redux';
-import { setRole as setUserRole, setUserData } from '../redux/slices/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { 
   getAuth, 
@@ -16,7 +14,6 @@ import {
 } from 'firebase/firestore';
 
 const AuthModal = ({ isOpen, onClose }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -58,20 +55,14 @@ const AuthModal = ({ isOpen, onClose }) => {
           ...roleData
         };
 
-        // Update Redux state
-        dispatch(setUserRole(userData.role));
-        dispatch(setUserData(combinedData));
+        // Store complete user data in localStorage
+        localStorage.setItem('userData', JSON.stringify(combinedData));
+        localStorage.setItem('authToken', await user.getIdToken());
 
-        // Store token
-        const token = await user.getIdToken();
-        localStorage.setItem('authToken', token);
-
-        // Navigate directly to dashboard if profile is completed
+        // Navigate based on profile completion
         if (roleData.profileCompleted) {
-          // If profile is completed, route based on role
           navigate(userData.role === "teacher" ? '/lectures' : '/store');
         } else {
-          // If profile is not completed, both go to profile page
           navigate('/profile');
         }
 
@@ -80,47 +71,47 @@ const AuthModal = ({ isOpen, onClose }) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Create base user document
-        await setDoc(doc(db, 'users', user.uid), {
+        const newUserData = {
           email: user.email,
           role: role,
           createdAt: new Date().toISOString(),
           displayName: email.split('@')[0],
           isVerified: false,
           lastLogin: new Date().toISOString(),
-          profileCompleted: false
-        });
+          profileCompleted: false,
+          uid: user.uid
+        };
+
+        // Create base user document
+        await setDoc(doc(db, 'users', user.uid), newUserData);
 
         // Create role-specific document
-        if (role === 'teacher') {
-          await setDoc(doc(db, 'teachers', user.uid), {
-            userId: user.uid,
-            email: user.email,
-            courses: [],
-            students: [],
-            createdAt: new Date().toISOString()
-          });
-        } else {
-          await setDoc(doc(db, 'students', user.uid), {
-            userId: user.uid,
-            email: user.email,
-            enrolledCourses: [],
-            progress: {},
-            createdAt: new Date().toISOString()
-          });
-        }
+        const roleSpecificData = role === 'teacher' 
+          ? {
+              userId: user.uid,
+              email: user.email,
+              courses: [],
+              students: [],
+              createdAt: new Date().toISOString()
+            }
+          : {
+              userId: user.uid,
+              email: user.email,
+              enrolledCourses: [],
+              progress: {},
+              createdAt: new Date().toISOString()
+            };
 
-        // Get token and update Redux
-        const token = await user.getIdToken();
-        localStorage.setItem('authToken', token);
+        await setDoc(doc(db, `${role}s`, user.uid), roleSpecificData);
 
-        dispatch(setUserRole(role));
-        dispatch(setUserData({
-          uid: user.uid,
-          email: user.email,
-          role: role,
-          profileCompleted: false
-        }));
+        // Store complete user data in localStorage
+        const combinedData = {
+          ...newUserData,
+          ...roleSpecificData
+        };
+        
+        localStorage.setItem('userData', JSON.stringify(combinedData));
+        localStorage.setItem('authToken', await user.getIdToken());
 
         navigate('/profile');
       }

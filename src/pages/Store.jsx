@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
 import Navbar from '../components/Navbar';
+import { checkAuth } from '../utils/auth';
 
 const categories = ["All", "Web Development", "Data Science", "Mobile Development", "Design", "Business"];
 const levels = ["All", "Beginner", "Intermediate", "Advanced"];
@@ -16,8 +16,8 @@ const Store = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
+  const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
-  const { userData } = useSelector(state => state.user);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -40,6 +40,13 @@ const Store = () => {
     };
 
     fetchCourses();
+  }, []);
+
+  useEffect(() => {
+    const user = checkAuth();
+    if (user) {
+      setUserData(user);
+    }
   }, []);
 
   const getSortedCourses = (filteredCourses) => {
