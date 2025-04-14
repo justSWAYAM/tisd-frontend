@@ -6,6 +6,7 @@ import CourseCard from '../components/CourseCard';
 import Navbar from '../components/Navbar';
 import { checkAuth } from '../utils/auth';
 
+
 const categories = ["All", "Web Development", "Data Science", "Mobile Development", "Design", "Business"];
 const levels = ["All", "Beginner", "Intermediate", "Advanced"];
 
@@ -70,7 +71,8 @@ const Store = () => {
         );
     }
   };
-
+ const a = auth.currentUser.uid;
+ console.log(a);
   const filteredCourses = getSortedCourses(
     courses.filter(course => {
       const matchesSearch = 
