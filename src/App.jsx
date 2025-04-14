@@ -9,6 +9,8 @@ import Store from './pages/Store';
 import CodeEditor from './components/CodeEditor'
 import UploadCourse from './pages/UploadCourse';
 import Lectures from './pages/Lectures';
+import AddLectures from './pages/AddLectures';
+import CourseView from './pages/CourseView';
 
 function App() {
   return (
@@ -18,9 +20,11 @@ function App() {
             <Route path='/' element={<LandingPage />} />
             <Route path='/profile' element={<ProfilePage />} />
             <Route path='/Store' element={<Store />} />
-            <Route path='/Code' element={<CodeEditor/>}/>
+            <Route path='/Code/:courseId/:lectureId' element={<CodeEditor/>}/>
             <Route path="/upload-course" element={<UploadCourse />} />
             <Route path="/lectures" element={<Lectures />} />
+            <Route path="/add-lectures/:courseId" element={<AddLectures />} />
+            <Route path="/course/:courseId" element={<CourseView />} />
         </Routes>
       </Router>
     </Provider>

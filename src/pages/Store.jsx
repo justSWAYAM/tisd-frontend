@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { collection, getDocs, query, orderBy, doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
+import Navbar from '../components/Navbar';
 
 const categories = ["All", "Web Development", "Data Science", "Mobile Development", "Design", "Business"];
 const levels = ["All", "Beginner", "Intermediate", "Advanced"];
@@ -13,6 +16,8 @@ const Store = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
+  const navigate = useNavigate();
+  const { userData } = useSelector(state => state.user);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -70,8 +75,42 @@ const Store = () => {
     })
   );
 
+  const handleEnrollCourse = async (course) => {
+    if (!auth.currentUser) {
+      alert('Please login to enroll in courses');
+      return;
+    }
+
+    try {
+      // Update user's enrolledCourses
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        enrolledCourses: arrayUnion({
+          courseId: course.id,
+          enrolledAt: new Date().toISOString(),
+          completedLectures: []
+        })
+      });
+
+      // Update course's studentsEnrolled count
+      const courseRef = doc(db, 'courses', course.id);
+      const courseDoc = await getDoc(courseRef);
+      await updateDoc(courseRef, {
+        studentsEnrolled: (courseDoc.data().studentsEnrolled || 0) + 1
+      });
+
+      // Navigate to course view
+      navigate(`/course/${course.id}`);
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+      alert('Failed to enroll in course');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
+      <Navbar />
+      
       {/* Header */}
       <div className="bg-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -137,7 +176,14 @@ const Store = () => {
             {/* Course Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCourses.map(course => (
-                <CourseCard key={course.id} course={course} />
+                <CourseCard 
+                  key={course.id} 
+                  course={course}
+                  onEnroll={() => handleEnrollCourse(course)}
+                  isEnrolled={userData?.enrolledCourses?.some(
+                    enrolled => enrolled.courseId === course.id
+                  )}
+                />
               ))}
             </div>
 

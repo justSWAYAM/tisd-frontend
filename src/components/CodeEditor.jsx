@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import Editor from '@monaco-editor/react';
+import Navbar from './Navbar';
 import YouTube from 'react-youtube';
+import Split from 'react-split';
 
 const CodeEditor = () => {
+  const { courseId, lectureId } = useParams();
+  const navigate = useNavigate();
+  const [lecture, setLecture] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState(getInitialCode('javascript'));
   const [output, setOutput] = useState('');
   const [terminalOutput, setTerminalOutput] = useState('');
   const [activeTab, setActiveTab] = useState('output');
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isTerminalVisible, setIsTerminalVisible] = useState(false);
   
   // Sample YouTube video ID (replace with your actual coding tutorial video ID)
   const videoId = "PkZNo7MFNFg";
@@ -48,7 +58,7 @@ public class Main {
   };
 
   const youtubeOpts = {
-    height: '600',
+    height: '390',
     width: '100%',
     playerVars: {
       autoplay: 0,
@@ -161,6 +171,7 @@ public class Main {
     }
     
     setOutput(executionOutput);
+    setIsTerminalVisible(true); // Show terminal when running code
     setActiveTab('output');
   };
 
@@ -179,28 +190,85 @@ public class Main {
     setActiveTab('terminal');
   };
 
+  useEffect(() => {
+    const fetchLecture = async () => {
+      try {
+        const courseRef = doc(db, 'courses', courseId);
+        const courseSnap = await getDoc(courseRef);
+        
+        if (courseSnap.exists()) {
+          const course = courseSnap.data();
+          const lecture = course.lectures.find(l => l.id === lectureId);
+          setLecture(lecture);
+        }
+      } catch (err) {
+        console.error('Error fetching lecture:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLecture();
+  }, [courseId, lectureId]);
+
+  // Function to extract YouTube video ID from URL
+  const getYouTubeVideoId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  if (loading) return <div className="min-h-screen bg-black text-white p-8">Loading...</div>;
+
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="bg-gray-900 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold mb-2">Interactive Coding Lesson</h1>
-          <p className="text-gray-400">Learn by doing - Code along with the video tutorial</p>
+      <Navbar />
+      
+      <div className="w-full px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <button 
+            onClick={() => navigate(`/add-lectures/${courseId}`)}
+            className="text-gray-400 hover:text-white flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+          {lecture?.title && (
+            <h2 className="text-sm font-medium text-gray-400 truncate max-w-md">
+              {lecture.title}
+            </h2>
+          )}
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Split 
+          className="flex h-[calc(100vh-8rem)]"
+          sizes={[50, 50]}
+          minSize={[400, 400]}
+          gutterSize={10}
+          direction="horizontal"
+        >
           {/* Video Section */}
           <div className="bg-gray-900 rounded-lg overflow-hidden">
-            <div className="relative">
-              <YouTube
-                videoId={videoId}
-                opts={youtubeOpts}
-                className="w-full"
-                containerClassName="aspect-video"
-              />
+            <div className="relative w-full h-full flex items-center">
+              {lecture?.videoUrl && (
+                <div className="w-full">
+                  <div className="relative pt-[56.25%]">
+                    <YouTube
+                      videoId={getYouTubeVideoId(lecture.videoUrl)}
+                      opts={{
+                        ...youtubeOpts,
+                        width: '100%',
+                        height: '100%',
+                      }}
+                      className="absolute top-0 left-0 w-full h-full"
+                      containerClassName="absolute top-0 left-0 w-full h-full"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -239,77 +307,110 @@ public class Main {
                 </select>
               </div>
             </div>
-            
-            <div className="h-[400px]">
-              <Editor
-                height="100%"
-                language={selectedLanguage}
-                value={code}
-                options={editorOptions}
-                onChange={handleEditorChange}
-                theme="vs-dark"
-              />
-            </div>
-
-            {/* Output Tabs */}
-            <div className="border-t border-gray-800">
-              <div className="flex border-b border-gray-800">
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${
-                    activeTab === 'output'
-                      ? 'text-[#D4FF56] border-b-2 border-[#D4FF56]'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  onClick={() => setActiveTab('output')}
-                >
-                  Output
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${
-                    activeTab === 'terminal'
-                      ? 'text-[#D4FF56] border-b-2 border-[#D4FF56]'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  onClick={() => setActiveTab('terminal')}
-                >
-                  Terminal
-                </button>
+            <div className="relative h-[calc(100%-4rem)]">
+              {/* Editor with scrollbar */}
+              <div className="h-full overflow-auto">
+                <Editor
+                  height="100%"
+                  language={selectedLanguage}
+                  value={code}
+                  options={{
+                    ...editorOptions,
+                    scrollbar: {
+                      vertical: 'visible',
+                      horizontal: 'visible',
+                      useShadows: false,
+                      verticalScrollbarSize: 10,
+                      horizontalScrollbarSize: 10
+                    }
+                  }}
+                  onChange={handleEditorChange}
+                  theme="vs-dark"
+                />
               </div>
 
-              {/* Output/Terminal Content */}
-              <div className="p-4 bg-gray-800 h-[150px] overflow-y-auto font-mono">
-                {activeTab === 'output' ? (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-400 mb-2">Output:</h3>
-                    <pre className="text-sm text-white whitespace-pre-wrap">{output}</pre>
+              {/* Terminal Panel */}
+              {isTerminalVisible && (
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800"
+                  style={{ height: '40%' }}
+                >
+                  <div className="flex justify-between items-center border-b border-gray-800">
+                    <div className="flex">
+                      <button
+                        className={`px-4 py-2 text-sm font-medium ${
+                          activeTab === 'output'
+                            ? 'text-[#D4FF56] border-b-2 border-[#D4FF56]'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        onClick={() => setActiveTab('output')}
+                      >
+                        Output
+                      </button>
+                      <button
+                        className={`px-4 py-2 text-sm font-medium ${
+                          activeTab === 'terminal'
+                            ? 'text-[#D4FF56] border-b-2 border-[#D4FF56]'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        onClick={() => setActiveTab('terminal')}
+                      >
+                        Terminal
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setIsTerminalVisible(false)}
+                      className="px-2 py-1 mr-2 text-gray-400 hover:text-white"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
-                ) : (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-400 mb-2">Terminal:</h3>
-                    <pre className="text-sm text-white whitespace-pre-wrap">
-                      <span className="text-green-400">➜</span> {terminalOutput}
-                    </pre>
+
+                  <div className="p-4 bg-gray-800 h-[calc(100%-2.5rem)] overflow-y-auto font-mono">
+                    {activeTab === 'output' ? (
+                      <div>
+                        <pre className="text-sm text-white whitespace-pre-wrap">{output || 'No output'}</pre>
+                      </div>
+                    ) : (
+                      <div>
+                        <pre className="text-sm text-white whitespace-pre-wrap">
+                          <span className="text-green-400">$</span> {getTerminalCommand()}
+                          {terminalOutput && (
+                            <>
+                              <br />
+                              {terminalOutput}
+                            </>
+                          )}
+                        </pre>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </Split>
 
-        {/* Instructions Panel */}
-        <div className="mt-6 bg-gray-900 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Instructions</h2>
-          <div className="prose prose-invert max-w-none">
-            <ol className="list-decimal list-inside space-y-2 text-gray-300">
-              <li>Select your preferred programming language from the dropdown</li>
-              <li>Watch the video tutorial on the left side</li>
-              <li>Code along in the editor on the right side</li>
-              <li>Use the "Run Code" button to execute your code and see the output</li>
-              <li>Use the "Run in Terminal" button to simulate terminal execution</li>
-              <li>Switch between Output and Terminal views to see different execution results</li>
-              <li>Toggle fullscreen mode for a better coding experience</li>
-            </ol>
-          </div>
+        {/* Move Instructions to a collapsible panel */}
+        <div className="mt-6">
+          <details className="bg-gray-900 rounded-lg">
+            <summary className="p-4 cursor-pointer text-sm font-medium hover:bg-gray-800">
+              Show Instructions
+            </summary>
+            <div className="p-4 border-t border-gray-800">
+              <div className="prose prose-invert max-w-none">
+                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
+                  <li>Select your preferred programming language</li>
+                  <li>Watch the tutorial and code along</li>
+                  <li>Run code to see output</li>
+                  <li>Use terminal simulation for command-line experience</li>
+                  <li>Drag the divider to resize panels</li>
+                </ol>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
     </div>
