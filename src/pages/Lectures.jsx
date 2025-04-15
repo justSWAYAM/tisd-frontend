@@ -53,11 +53,9 @@ const Lectures = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
-      
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-[#D4FF56] to-white text-transparent bg-clip-text">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-[#D4FF56] to-white text-transparent bg-clip-text">
             My Courses
           </h1>
         </div>
@@ -75,7 +73,7 @@ const Lectures = () => {
             <p className="text-gray-400">You haven't uploaded any courses yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {courses.map(course => (
               <CourseCard 
                 key={course.id} 

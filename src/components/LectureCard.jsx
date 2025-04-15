@@ -104,17 +104,17 @@ const LectureCard = ({
   };
 
   return (
-    <div className={`p-6 bg-gray-900 rounded-lg border ${
+    <div className={`p-4 sm:p-6 bg-gray-900 rounded-lg border ${
       isCompleted ? 'border-[#D4FF56]/50' : 'border-gray-800'
     }`}>
-      <div className="flex items-center gap-4">
-        <span className="text-2xl text-[#D4FF56] font-medium">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <span className="text-xl sm:text-2xl text-[#D4FF56] font-medium">
           {String(index + 1).padStart(2, '0')}
         </span>
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-medium text-white">{lecture.title}</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base sm:text-lg font-medium text-white">{lecture.title}</h3>
               {lecture.hasQuiz && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-[#D4FF56]/20 text-[#D4FF56] rounded-full">
                   Has Quiz
@@ -126,7 +126,7 @@ const LectureCard = ({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {!isTeacher && (
                 <button
                   onClick={handleComplete}

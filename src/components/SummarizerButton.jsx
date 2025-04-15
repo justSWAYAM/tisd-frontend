@@ -23,7 +23,9 @@ Always maintain this JSON structure in your responses.
 
 const SummarizerButton = ({ lectureId, videoUrl }) => {
   const [showSummarizer, setShowSummarizer] = useState(false);
-  const [summarizerWidth, setSummarizerWidth] = useState(380);
+  const [summarizerWidth, setSummarizerWidth] = useState(
+    window.innerWidth < 640 ? window.innerWidth : 380
+  );
   const [minimized, setMinimized] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [summary, setSummary] = useState(null);
@@ -61,6 +63,19 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
     
     initializeChat();
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setSummarizerWidth(window.innerWidth);
+      } else if (summarizerWidth > window.innerWidth) {
+        setSummarizerWidth(window.innerWidth * 0.9);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [summarizerWidth]);
 
   const processResponseText = (text) => {
     try {
@@ -208,9 +223,10 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
       {showSummarizer && (
         <div 
           ref={sidebarRef}
-          className="fixed top-0 right-0 h-full shadow-2xl border-l border-gray-800 flex flex-col z-50"
+          className="fixed top-0 right-0 h-full shadow-2xl border-l border-gray-800 flex flex-col z-50 w-full sm:w-auto"
           style={{ 
-            width: `${summarizerWidth}px`,
+            width: window.innerWidth < 640 ? '100%' : `${summarizerWidth}px`,
+            maxWidth: window.innerWidth < 640 ? '100%' : '600px',
             transition: !resizingRef.current ? 'width 0.3s ease' : 'none'
           }}
         >
@@ -229,10 +245,12 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
                   Video Summarizer
                 </h2>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <button 
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className={`p-1.5 rounded-full ${isDarkTheme ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`p-2 sm:p-1.5 rounded-full ${
+                    isDarkTheme ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-200 hover:bg-gray-300'
+                  }`}
                 >
                   {isDarkTheme ? (
                     <Sun size={16} className="text-gray-400" />
@@ -242,7 +260,7 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
                 </button>
                 <button 
                   onClick={() => setMinimized(!minimized)}
-                  className={`p-1.5 rounded-full ${isDarkTheme ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`p-2 sm:p-1.5 rounded-full ${isDarkTheme ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                   {minimized ? (
                     <Maximize2 size={16} className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'} />
@@ -252,7 +270,7 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
                 </button>
                 <button 
                   onClick={() => setShowSummarizer(false)}
-                  className={`p-1.5 rounded-full ${isDarkTheme ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`p-2 sm:p-1.5 rounded-full ${isDarkTheme ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                   <XCircle size={16} className={isDarkTheme ? 'text-gray-400' : 'text-gray-600'} />
                 </button>
@@ -260,7 +278,9 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
             </div>
 
             {!minimized && (
-              <div className={`flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar ${isDarkTheme ? 'bg-gray-900' : 'bg-white'}`}>
+              <div className={`flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4 custom-scrollbar ${
+                isDarkTheme ? 'bg-gray-900' : 'bg-white'
+              }`}>
                 {/* Visual background elements */}
                 <div className="absolute inset-0 z-0 opacity-5 pointer-events-none">
                   <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-gradient-to-br from-[#D4FF56] to-green-400 blur-2xl"></div>
@@ -272,7 +292,7 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
                   {messages.length === 0 ? (
                     <button
                       onClick={handleGenerateSummary}
-                      className="w-full py-3 bg-gradient-to-r from-[#D4FF56] to-[#B0D943] text-black rounded-lg hover-glow transition-all font-medium"
+                      className="w-full py-4 sm:py-3 text-base sm:text-sm bg-gradient-to-r from-[#D4FF56] to-[#B0D943] text-black rounded-lg hover-glow transition-all font-medium"
                       disabled={isLoading}
                     >
                       Generate Summary
@@ -280,8 +300,9 @@ const SummarizerButton = ({ lectureId, videoUrl }) => {
                   ) : (
                     <div className="space-y-4">
                       {messages.map((message, index) => (
-                        <div key={index} className="flex justify-start mb-4">
-                          <div className={`max-w-[90%] rounded-lg p-4 bg-gradient-to-br ${
+                        // Update message container
+                        <div className="flex justify-start mb-4">
+                          <div className={`w-full sm:max-w-[90%] rounded-lg p-3 sm:p-4 bg-gradient-to-br ${
                             isDarkTheme ? 'from-gray-800 to-gray-700 text-white' : 'from-gray-100 to-gray-200 text-gray-800'
                           } model-glow`}>
                             <div className="space-y-4">

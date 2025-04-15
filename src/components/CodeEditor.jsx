@@ -372,18 +372,10 @@ public class Main {
 
   // Add this useEffect after other useEffects
   useEffect(() => {
-    // Check if user has attempted this quiz before
-    const hasAttempted = localStorage.getItem(`quiz_${lectureId}_attempted`);
-    if (hasAttempted === 'true') {
-      setHasAttemptedQuiz(true);
-      setQuizSubmitted(true);
-    }
-  }, [lectureId]);
-
-  useEffect(() => {
     const fetchQuizData = async () => {
       if (userData?.userId && lecture?.hasQuiz) {
         try {
+          // Check if quiz has been attempted
           const quizAttemptRef = doc(db, 'quizAttempts', `${userData.userId}_${lectureId}`);
           const quizAttemptDoc = await getDoc(quizAttemptRef);
           
@@ -393,6 +385,12 @@ public class Main {
             setQuizSubmitted(true);
             setQuizScore(quizData.score);
             setQuizResults(quizData.results || []);
+          } else {
+            // Reset quiz states if not attempted
+            setHasAttemptedQuiz(false);
+            setQuizSubmitted(false);
+            setQuizScore(0);
+            setQuizResults([]);
           }
         } catch (error) {
           console.error('Error fetching quiz data:', error);
@@ -594,62 +592,61 @@ public class Main {
         </Split>
 
         {/* Quiz Section */}
-        {lecture?.quiz && !hasAttemptedQuiz && (
+        {lecture?.quiz && (
           <div className="mt-6 mb-6">
-            <Quiz 
-              quiz={lecture.quiz}
-              onSubmit={async (score, attempted, results) => {
-                try {
-                  // Store quiz attempt in database
-                  const quizAttemptRef = doc(db, 'quizAttempts', `${userData.userId}_${lectureId}`);
-                  await setDoc(quizAttemptRef, {
-                    userId: userData.userId,
-                    lectureId: lectureId,
-                    courseId: courseId,
-                    score: score,
-                    completedAt: new Date().toISOString(),
-                    results: results
-                  });
+            {!hasAttemptedQuiz ? (
+              <Quiz 
+                quiz={lecture.quiz}
+                onSubmit={async (score, attempted, results) => {
+                  try {
+                    // Store quiz attempt in database
+                    const quizAttemptRef = doc(db, 'quizAttempts', `${userData.userId}_${lectureId}`);
+                    await setDoc(quizAttemptRef, {
+                      userId: userData.userId,
+                      lectureId: lectureId,
+                      courseId: courseId,
+                      score: score,
+                      completedAt: new Date().toISOString(),
+                      results: results
+                    });
 
-                  setQuizSubmitted(true);
-                  setHasAttemptedQuiz(attempted);
-                  setQuizScore(score);
-                  setQuizResults(results);
-                } catch (error) {
-                  console.error('Error saving quiz attempt:', error);
-                  alert('Failed to save quiz results');
-                }
-              }}
-            />
-          </div>
-        )}
-
-        {/* Quiz Results Section - Show when quiz is completed */}
-        {hasAttemptedQuiz && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-            <h4 className="text-[#D4FF56] font-medium mb-4">Quiz Results</h4>
-            <div className="space-y-4">
-              <div className="text-center p-4 bg-gray-900 rounded">
-                <p className="text-2xl font-bold text-[#D4FF56]">
-                  Score: {quizScore.toFixed(1)}%
-                </p>
-                <p className="text-gray-400 mt-2">
-                  {quizScore === 100 ? '🎉 Perfect!' : quizScore >= 70 ? '👍 Well done!' : '💪 Keep practicing!'}
-                </p>
-              </div>
-              {quizResults.filter(r => !r.isCorrect).length > 0 && (
-                <div className="mt-4 p-4 bg-red-900/20 rounded-lg">
-                  <h4 className="text-red-400 font-medium mb-2">Review Incorrect Answers:</h4>
-                  {quizResults.filter(r => !r.isCorrect).map((result, index) => (
-                    <div key={index} className="mb-2 text-sm text-gray-300">
-                      <p className="font-medium text-white">{result.question}</p>
-                      <p className="text-red-400">Your answer: {result.userAnswer}</p>
-                      <p className="text-green-400">Correct answer: {result.correctAnswer}</p>
+                    setQuizSubmitted(true);
+                    setHasAttemptedQuiz(true);
+                    setQuizScore(score);
+                    setQuizResults(results);
+                  } catch (error) {
+                    console.error('Error saving quiz attempt:', error);
+                    alert('Failed to save quiz results');
+                  }
+                }}
+              />
+            ) : (
+              <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+                <h4 className="text-[#D4FF56] font-medium mb-4">Quiz Results</h4>
+                <div className="space-y-4">
+                  <div className="text-center p-4 bg-gray-900 rounded">
+                    <p className="text-2xl font-bold text-[#D4FF56]">
+                      Score: {quizScore.toFixed(1)}%
+                    </p>
+                    <p className="text-gray-400 mt-2">
+                      {quizScore === 100 ? '🎉 Perfect!' : quizScore >= 70 ? '👍 Well done!' : '💪 Keep practicing!'}
+                    </p>
+                  </div>
+                  {quizResults.filter(r => !r.isCorrect).length > 0 && (
+                    <div className="mt-4 p-4 bg-red-900/20 rounded-lg">
+                      <h4 className="text-red-400 font-medium mb-2">Review Incorrect Answers:</h4>
+                      {quizResults.filter(r => !r.isCorrect).map((result, index) => (
+                        <div key={index} className="mb-2 text-sm text-gray-300">
+                          <p className="font-medium text-white">{result.question}</p>
+                          <p className="text-red-400">Your answer: {result.userAnswer}</p>
+                          <p className="text-green-400">Correct answer: {result.correctAnswer}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
