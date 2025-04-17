@@ -99,7 +99,7 @@ const UploadCourse = () => {
           {/* Price */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Price (USD)
+              Price (INR)
             </label>
             <input
               type="number"
