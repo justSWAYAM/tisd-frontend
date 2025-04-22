@@ -5,7 +5,7 @@ import { db } from '../firebase/config';
 import { checkAuth } from '../utils/auth';
 
 const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled: initialIsEnrolled }) => {
-  const { id, title, instructor, price, level, thumbnail, thumbnailUrl, rating } = course;
+  const { id, title, instructor, level, thumbnail, thumbnailUrl, rating } = course;
   const [imageError, setImageError] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(initialIsEnrolled);
@@ -137,8 +137,7 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled: initialIs
           <span className="text-gray-400 text-sm">({rating})</span>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-white">${price}</span>
+        <div className="flex items-center justify-end">
           {isTeacher ? (
             <div className="flex gap-2" onClick={e => e.stopPropagation()}>
               <button 

@@ -11,7 +11,6 @@ const UploadCourse = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [courseData, setCourseData] = useState({
     title: '',
-    price: '',
     level: 'Beginner',
     category: 'Web Development',
     thumbnailUrl: 'https://placehold.co/600x400?text=Course+Thumbnail',
@@ -93,24 +92,6 @@ const UploadCourse = () => {
               onChange={handleInputChange}
               className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
               placeholder="Enter course title"
-            />
-          </div>
-
-          {/* Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Price (INR)
-            </label>
-            <input
-              type="number"
-              name="price"
-              required
-              min="0"
-              step="0.01"
-              value={courseData.price}
-              onChange={handleInputChange}
-              className="w-full bg-gray-900 border border-gray-800 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4FF56] text-white"
-              placeholder="29.99"
             />
           </div>
 
