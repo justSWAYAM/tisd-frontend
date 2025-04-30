@@ -28,7 +28,7 @@ const CourseCard = ({ course, isTeacher = false, onEnroll, isEnrolled: initialIs
     
     if (!userData) {
       alert('Please login to enroll in courses');
-      navigate('/login');
+      navigate('/');
       return;
     }
 

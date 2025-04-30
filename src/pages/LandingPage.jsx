@@ -69,7 +69,8 @@ const LandingPage = () => {
                 Join thousands of learners worldwide and unlock your potential with our comprehensive online courses. Learn at your own pace, from anywhere.
               </p>
               <div className="flex flex-wrap gap-4">
-                <button className="px-6 py-3 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition">
+                <button className="px-6 py-3 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition"
+                onClick={() =>navigate('/store')}>
                   Explore Courses
                 </button>
               </div>

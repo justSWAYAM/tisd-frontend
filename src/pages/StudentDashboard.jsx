@@ -30,7 +30,7 @@ const StudentDashboard = () => {
       try {
         const userData = checkAuth();
         if (!userData) {
-          navigate('/login');
+          navigate('/');
           return;
         }
 

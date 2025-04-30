@@ -17,7 +17,7 @@ const Lectures = () => {
       const userData = checkAuth();
       
       if (!userData) {
-        navigate('/login');
+        navigate('/');
         return;
       }
 

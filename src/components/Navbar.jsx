@@ -92,7 +92,7 @@ const Navbar = () => {
               </div>
             ) : (
               <Link
-                to="/login"
+                to="/"
                 className="bg-black border border-[#D4FF56] text-[#D4FF56] px-4 py-2 rounded-md text-sm font-medium hover:bg-[#D4FF56] hover:text-black transition-all duration-300"
               >
                 Login
