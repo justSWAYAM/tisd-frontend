@@ -46,6 +46,9 @@ const AuthModal = ({ isOpen, onClose }) => {
         
         // Get role-specific data
         const roleDoc = await getDoc(doc(db, `${userData.role}s`, user.uid));
+        if (!roleDoc.exists()) {
+          throw new Error('Role data not found');
+        }
         const roleData = roleDoc.data();
 
         const combinedData = {
@@ -133,6 +136,9 @@ const AuthModal = ({ isOpen, onClose }) => {
           break;
         case 'auth/invalid-email':
           errorMessage = 'Invalid email format';
+          break;
+        case 'permission-denied':
+          errorMessage = 'Access denied. Please check your permissions.';
           break;
         default:
           errorMessage = err.message;

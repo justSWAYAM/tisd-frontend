@@ -70,7 +70,14 @@ const LandingPage = () => {
               </p>
               <div className="flex flex-wrap gap-4">
                 <button className="px-6 py-3 bg-[#D4FF56] text-black font-medium rounded hover:bg-[#D4FF56]/90 transition"
-                onClick={() =>navigate('/store')}>
+                onClick={() => {
+                  const user = checkAuth();
+                  if (user) {
+                    navigate('/store');
+                  } else {
+                    setIsAuthModalOpen(true);
+                  }
+                }}>
                   Explore Courses
                 </button>
               </div>
